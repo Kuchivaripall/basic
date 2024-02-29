@@ -1,0 +1,72 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <MQ135.h>
+#include <MQ6.h>
+
+// Define pin configurations
+const int MQ135Pin = A0;   // Pin for MQ135 sensor
+const int MQ6Pin = A1;     // Pin for MQ6 sensor
+const int buzzerPin = 8;   // Pin for the alarm buzzer
+
+// LCD configuration
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // I2C address 0x27, 16 columns, 2 rows
+
+// Define threshold values for air quality
+const int airQualityThreshold = 200;  // Adjust as needed
+
+void setup() {
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+
+  pinMode(buzzerPin, OUTPUT);
+}
+
+void loop() {
+  // Read sensor data
+  float MQ135Value = analogRead(MQ135Pin);
+  float MQ6Value = analogRead(MQ6Pin);
+
+  // Convert analog readings to PPM values (calibration may be required)
+  float MQ135PPM = convertToPPM(MQ135Value, "MQ135");
+  float MQ6PPM = convertToPPM(MQ6Value, "MQ6");
+
+  // Display PPM values on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("MQ135 PPM: ");
+  lcd.print(MQ135PPM);
+  lcd.setCursor(0, 1);
+  lcd.print("MQ6 PPM: ");
+  lcd.print(MQ6PPM);
+
+  // Check air quality and trigger alarms
+  checkAirQuality(MQ135PPM, MQ6PPM);
+
+  delay(5000);  // Delay for 5 seconds before the next iteration
+}
+
+float convertToPPM(float sensorValue, String sensorType) {
+  // Conversion logic based on sensor characteristics (calibration may be required)
+  // Replace with calibration equations for your specific sensors
+  if (sensorType == "MQ135") {
+    return map(sensorValue, 0, 1023, 0, 500);
+  } else if (sensorType == "MQ6") {
+    return map(sensorValue, 0, 1023, 0, 1000);
+  }
+  return 0.0;
+}
+
+void checkAirQuality(float MQ135PPM, float MQ6PPM) {
+  // Implement logic to check air quality based on PPM values
+  if (MQ135PPM > airQualityThreshold || MQ6PPM > airQualityThreshold) {
+    triggerAlarm();
+    // Save logs or send data to a cloud platform (implement IoT connectivity)
+  }
+}
+
+void triggerAlarm() {
+  // Trigger alarm (buzzer) when air quality deteriorates
+  digitalWrite(buzzerPin, HIGH);
+  delay(2000);  // Alarm duration (2 seconds in this example)
+  digitalWrite(buzzerPin, LOW);
+}

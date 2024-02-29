@@ -1,0 +1,67 @@
+import RPi.GPIO as GPIO
+import time
+import requests
+
+# Define GPIO pins for sensors
+TEMP_SENSOR_PIN = 17
+HUMIDITY_SENSOR_PIN = 18
+RAIN_SENSOR_PIN = 27
+
+# API endpoint for reporting weather data
+API_ENDPOINT = 'http://your_api_endpoint/weather'
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TEMP_SENSOR_PIN, GPIO.IN)
+GPIO.setup(HUMIDITY_SENSOR_PIN, GPIO.IN)
+GPIO.setup(RAIN_SENSOR_PIN, GPIO.IN)
+
+def read_temperature():
+    # Read temperature from sensor (example)
+    temperature = 25.0  # Example temperature reading
+    return temperature
+
+def read_humidity():
+    # Read humidity from sensor (example)
+    humidity = 60.0  # Example humidity reading
+    return humidity
+
+def read_rain():
+    # Read rain sensor (example)
+    rain_status = GPIO.input(RAIN_SENSOR_PIN)
+    return rain_status
+
+def send_weather_data(temperature, humidity, rain_status):
+    # Prepare data
+    data = {
+        'temperature': temperature,
+        'humidity': humidity,
+        'rain': rain_status
+    }
+
+    # Send data to API endpoint
+    try:
+        response = requests.post(API_ENDPOINT, json=data)
+        if response.status_code == 200:
+            print("Weather data sent successfully")
+        else:
+            print("Failed to send weather data. Status code:", response.status_code)
+    except Exception as e:
+        print("Exception occurred while sending weather data:", str(e))
+
+try:
+    while True:
+        # Read sensor data
+        temperature = read_temperature()
+        humidity = read_humidity()
+        rain_status = read_rain()
+
+        # Send data to API
+        send_weather_data(temperature, humidity, rain_status)
+
+        # Wait before taking next reading
+        time.sleep(60)  # Adjust as needed
+except KeyboardInterrupt:
+    print("Exiting...")
+finally:
+    GPIO.cleanup()  # Cleanup GPIO pins on program exit

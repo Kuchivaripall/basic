@@ -1,0 +1,68 @@
+import machine
+import time
+from umqtt.simple import MQTTClient
+
+# WiFi credentials
+WIFI_SSID = "your_wifi_ssid"
+WIFI_PASSWORD = "your_wifi_password"
+
+# MQTT broker details
+MQTT_BROKER = "mqtt_broker_address"
+MQTT_PORT = 1883
+MQTT_USER = "mqtt_username"
+MQTT_PASSWORD = "mqtt_password"
+MQTT_TOPIC = "garage/door"
+
+# Pin for controlling the garage door
+GARAGE_DOOR_PIN = 5  # GPIO5
+
+# Callback function to handle incoming MQTT messages
+def mqtt_callback(topic, msg):
+    print("Received MQTT message on topic {}: {}".format(topic, msg))
+    if topic.decode() == MQTT_TOPIC.encode() and msg.decode() == "1":
+        # Open the garage door
+        print("Opening the garage door")
+        door_pin.value(1)
+        time.sleep(1)  # Adjust the delay as needed
+        door_pin.value(0)
+
+# Connect to WiFi
+def connect_wifi():
+    import network
+    sta_if = network.WLAN(network.STA_IF)
+    if not sta_if.isconnected():
+        print("Connecting to WiFi...")
+        sta_if.active(True)
+        sta_if.connect(WIFI_SSID, WIFI_PASSWORD)
+        while not sta_if.isconnected():
+            pass
+    print("WiFi connected")
+    print("IP address:", sta_if.ifconfig()[0])
+
+# Connect to MQTT broker
+def connect_mqtt():
+    print("Connecting to MQTT broker...")
+    client = MQTTClient("garage_door", MQTT_BROKER, user=MQTT_USER, password=MQTT_PASSWORD)
+    client.set_callback(mqtt_callback)
+    client.connect()
+    client.subscribe(MQTT_TOPIC)
+    print("Connected to MQTT broker")
+    return client
+
+# Setup GPIO pin for controlling the garage door
+door_pin = machine.Pin(GARAGE_DOOR_PIN, machine.Pin.OUT)
+door_pin.value(0)  # Initially keep the door closed
+
+# Main function
+def main():
+    connect_wifi()
+    mqtt_client = connect_mqtt()
+
+    try:
+        while True:
+            mqtt_client.wait_msg()
+    finally:
+        mqtt_client.disconnect()
+
+if __name__ == "__main__":
+    main()
